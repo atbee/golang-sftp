@@ -1,3 +1,5 @@
+// Original code from https://sftptogo.com/blog/go-sftp/
+
 package main
 
 import (
@@ -54,4 +56,35 @@ func main() {
 	}
 
 	defer sc.Close()
+
+	listFiles(sc, ".")
+	fmt.Fprintf(os.Stdout, "\n")
+}
+
+func listFiles(sc *sftp.Client, remoteDir string) (err error) {
+	fmt.Fprintf(os.Stdout, "Listing [%s] ...\n\n", remoteDir)
+
+	files, err := sc.ReadDir(remoteDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to list remote dir: %v\n", err)
+		return
+	}
+
+	for _, f := range files {
+		var name, modTime, size string
+
+		name = f.Name()
+		modTime = f.ModTime().Format("2006-01-02 15:04:05")
+		size = fmt.Sprintf("%12d", f.Size())
+
+		if f.IsDir() {
+			name = name + "/"
+			modTime = ""
+			size = "PRE"
+		}
+
+		fmt.Fprintf(os.Stdout, "%19s %12s %s\n", modTime, size, name)
+	}
+
+	return
 }
